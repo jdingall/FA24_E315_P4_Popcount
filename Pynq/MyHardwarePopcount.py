@@ -6,9 +6,10 @@ from pynq import MMIO
 class MyHardwarePopcount():
     
     def __init__(self):
-        self.overlay = Overlay('bitstream.bit')        
-        self.mmio = self.overlay.axi_popcount_0.S_AXI_LITE
-        # FILL ME IN!
+        # UNCOMMENT
+        #self.overlay = Overlay('bitstream.bit')        
+        #self.mmio = self.overlay.axi_popcount_0.S_AXI_LITE
+        pass
 
     def name(self):
         return "Hardware_Popcount"
