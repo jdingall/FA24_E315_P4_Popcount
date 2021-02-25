@@ -36,7 +36,7 @@ class Helper():
 
     def run_command(self, command):
         print ('running: ', command)
-        result = subprocess.Popen(command, shell=True, executable='/bin/bash', stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        result = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         return result.communicate()
 
 
