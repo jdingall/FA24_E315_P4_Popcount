@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import re
 
 
@@ -18,6 +19,11 @@ class Helper():
 
         self.priv_key = self.MY_DIR + '/.id_rsa.xilinx.priv'
         self.vivado = vivado
+
+        self.version = "1.0.0"
+    
+    def getVersion(self):
+        return self.version
 
     def load_json(self):
         if os.path.exists( self.JF):
@@ -60,6 +66,28 @@ class Helper():
         print ("Building Vivado Project")
         self.run_command(command) 
 
+    def impl_vivado(self, num_cores = 1):
+        #sanity check
+        if not os.path.exists( self.MY_DIR + '/vivado_project/vivado_project.xpr'):
+            raise Exception ("Project Missing!")
+
+        command = 'vivado -mode batch ' + \
+                '-source ' + self.MY_DIR + '/tcl/impl.tcl' + \
+                ' -tclargs ' + self.MY_DIR + ' ' + str(num_cores)
+
+        if self.vivado != None:
+            print ("vivado specified from command line")
+            command = command.replace('vivado', self.vivado)
+        elif shutil.which('vivado') != None:
+            print ("Found Vivado")
+        else:
+            raise Exception("Vivado not found!")
+
+        print ("Running Vivado Implimentation")
+        self.run_command(command) 
+
+
+
     def init_pynq(self):
         proj = self.J['Proj']
         ssh = 'ssh -i ' + self.priv_key + ' xilinx@'+self.J['IP'] 
@@ -86,7 +114,6 @@ class Helper():
         for command in commands:                     
             self.run_command(command)
 
-    
     def load_bitstream(self):
         bit =  self.MY_DIR + '/vivado_project/vivado_project.runs/impl_1/' + self.J['fpga_design'] + '_wrapper.bit'
 
@@ -133,32 +160,56 @@ class Helper():
 
 
             
+class Parser():
 
-if __name__ == "__main__":
+    def __init__ (self):
+        ap = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
-    h = Helper()
-    ap = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument('command', choices=['init','bitstream', 'setIp'], 
-            help=   'init:initialize the project\n'+
-                    'bitstream: upload the bitstream to the Pynq\n'+
-                    'setIp: set the Pynq IP Address')
-    ap.add_argument('--ip', type=str, nargs='?', help="Ip Address of Pynq")
-    ap.add_argument('--vivadoOnly', action='store_true', help="Initialize only the Vivado project")
-    ap.add_argument('--pynqOnly', action='store_true', help="Initialize only the Pynq project")
-    ap.add_argument('--vivado_bin', type=str, nargs='?', help="Path to Vivado binary")
+        sap = ap.add_subparsers(title='command', dest="command")
 
-    args = ap.parse_args()
+        init_ap = sap.add_parser('init', help='initialize the project')
+        init_ap.set_defaults(function=self.init)
+        init_ap.add_argument('--ip', type=str, nargs='?', help="Ip Address of Pynq")
+        init_ap.add_argument('--vivadoOnly', action='store_true', 
+            help="Initialize only the Vivado project")
+        init_ap.add_argument('--pynqOnly', action='store_true', 
+            help="Initialize only the Pynq project")
+        init_ap.add_argument('--vivado_bin', type=str, nargs='?', 
+            help="Path to Vivado binary")
 
-    print ("Welcome to the E315 Helper Script!")
-    print (" Current Pynq IP: ", h.J['IP'])
 
-    args.command = args.command.lower()
+        impl_ap= sap.add_parser('impl', help='syntheize the bitstream')
+        impl_ap.add_argument('--maxCores', type=int, nargs='?', default=1,
+            help="Number of CPU cores for synthesis")
+        impl_ap.add_argument('--vivado_bin', type=str, nargs='?', 
+            help="Path to Vivado binary")
 
-    if args.vivado_bin:
-        h = Helper( vivado=args.vivado_bin)
+        bitstream_ap= sap.add_parser('bitstream', help='write the bitstream to the Pynq')
+        bitstream_ap.add_argument('--ip', type=str, nargs='?', help="Ip Address of Pynq")
 
-    if args.command == 'init':
-        print ('Running ', args.command)
+        setIp_ap= sap.add_parser('setIp', help='set the Pynq\'s IP address')
+        setIp_ap.add_argument('--ip', type=str, nargs='?', help="Ip Address of Pynq")
+
+        version_ap = sap.add_parser('version', help='print current version number')
+
+        init_ap.set_defaults(function=self.init)
+        args = ap.parse_args()
+        
+        if not hasattr(self, args.command):
+            print ('Unrecognized Command')
+            ap.print_help()
+            exit(1)
+        
+        #jump to the correct command function
+        getattr(self, args.command)(args)
+
+
+    def init(self, args):
+        print ('Running init')
+        if args.vivado_bin:
+            h = Helper( vivado=args.vivado_bin)
+        else:
+            h = Helper()
 
         if args.ip:
             h.set_ip(args.ip)
@@ -171,17 +222,28 @@ if __name__ == "__main__":
             h.build_vivado()
             h.init_pynq()
 
-    elif args.command == 'bitstream':
-        print ('Running ', args.command)
+    def impl(self, args):
+        print ('Running impl')
 
+        if args.vivado_bin:
+            h = Helper( vivado=args.vivado_bin)
+        else:
+            h = Helper()
+        h.build_vivado()
+        h.impl_vivado( args.maxCores)
+
+    def bitstream(self, args):
+        print ('Running bitstream')
+        h = Helper()
         if args.ip:
             h.set_ip(args.ip)
-
         h.load_bitstream()
 
-    elif args.command == 'setip':
-        print ('Running ', args.command)
 
+    def setIp(self, args):
+        print ('Running setIp')
+        h = Helper()
+        
         if args.ip:
             newip = args.ip
         else:
@@ -189,5 +251,12 @@ if __name__ == "__main__":
             newip = input()
         h.set_ip(newip)
 
+    def version(self,args):
+        h = Helper()
+        print ('Running E315Helper Version #' + str(h.getVersion()) )
+
+if __name__ == "__main__":
+
+    Parser()
 
 
