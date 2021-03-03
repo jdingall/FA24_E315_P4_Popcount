@@ -18,14 +18,6 @@
 
 module axi_popcount 
 	(
-		// AXI4-Stream Interface
-		input                           S_AXIS_ACLK,
-		input                           S_AXIS_ARESETN,
-		input [31:0]                    S_AXIS_TDATA,
-        input [3:0]                     S_AXIS_TKEEP,
-        input                           S_AXIS_TLAST,
-        input                           S_AXIS_TVALID,
-        output                          S_AXIS_TREADY,
 
         // AXI4-Lite Interface
         // (Some signals are unused in our implimentation)
@@ -68,13 +60,8 @@ module axi_popcount
 
 
     popcount popcnt0(
-          .S_AXIS_ACLK(S_AXIS_ACLK),
-          .S_AXIS_ARESETN(S_AXIS_ARESETN),
-          .S_AXIS_TDATA(S_AXIS_TDATA),
-          .S_AXIS_TKEEP(S_AXIS_TKEEP),
-          .S_AXIS_TLAST(S_AXIS_TLAST),
-          .S_AXIS_TVALID(S_AXIS_TVALID),
-          .S_AXIS_TREADY(S_AXIS_TREADY),
+          .ACLK(S_AXI_LITE_ACLK),
+          .ARESETN(S_AXI_LITE_ARESETN),
           
           .WRITE_DATA(WRITE_MEM[1]),
           .WRITE_VALID(WRITE_MEM_VALID[1]),

@@ -4,14 +4,6 @@ module axi4lite_synth_tb();
 logic           ACLK;
 logic           ARESETN;
 
-
-// AXI4-Stream Interface
-logic [31:0]                    S_AXIS_TDATA;
-logic [3:0]                     S_AXIS_TKEEP;
-logic                           S_AXIS_TLAST;
-logic                           S_AXIS_TVALID;
-wire                          S_AXIS_TREADY;
-
 // AXI4-Lite Interface
 // (Some signals are unused in our implimentation)
 logic [31: 0]                   S_AXI_LITE_AWADDR;
@@ -37,16 +29,7 @@ logic                           S_AXI_LITE_RREADY;
 
 
 axi_popcount pc0 
-	(
-        
-		// AXI4-Stream Interface
-		.S_AXIS_ACLK(ACLK),
-		.S_AXIS_ARESETN(ARESETN),
-		.S_AXIS_TDATA,
-        .S_AXIS_TKEEP,
-        .S_AXIS_TLAST,
-        .S_AXIS_TVALID,
-        .S_AXIS_TREADY,
+	(       
 
         // AXI4-Lite Interface
         // (Some signals are unused in our implimentation)
@@ -79,12 +62,6 @@ always #10 ACLK=~ACLK;
 task init_signals();
     ACLK='h0;
     ARESETN='h0;
-
-    // AXI4-Stream Interface
-    S_AXIS_TDATA =32'h0;
-    S_AXIS_TKEEP = 4'h0;
-    S_AXIS_TLAST = 1'h0;
-    S_AXIS_TVALID= 1'h0;
 
     // AXI4-Lite Interface
     S_AXI_LITE_AWADDR = 32'h0;

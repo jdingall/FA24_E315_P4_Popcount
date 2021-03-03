@@ -17,15 +17,8 @@
 
 
 module popcount(
-
-        //AXI4-Stream SIGNALS
-        input               S_AXIS_ACLK,
-        input               S_AXIS_ARESETN,
-		input [31:0]        S_AXIS_TDATA,
-        input [3:0]         S_AXIS_TKEEP,
-        input               S_AXIS_TLAST, 
-        input               S_AXIS_TVALID,
-        output              S_AXIS_TREADY,
+        input               ACLK,
+        input               ARESETN,
 
         //MMIO Inputs
         input [31:0]        WRITE_DATA,
