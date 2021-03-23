@@ -31,8 +31,6 @@ module popcount(
         
     );
 
-    assign S_AXIS_TREADY = 1'h0;
-   
     // update me!
     assign COUNT = 32'h0;
     assign COUNT_BUSY = 1'h0;
