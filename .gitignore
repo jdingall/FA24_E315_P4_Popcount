@@ -1,0 +1,10 @@
+vivado_*
+vivado.jou*
+vivado.log*
+
+*.swp
+*.swo
+
+*.bda
+*.bxml
+*.xdc
