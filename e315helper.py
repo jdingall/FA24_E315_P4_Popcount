@@ -13,6 +13,8 @@ import re
 class Helper():
 
     def __init__(self, vivado=None):
+        
+        self.checkOS()
 
         self.MY_DIR = os.path.dirname(os.path.realpath(__file__))
         self.JF = self.MY_DIR + '/.data.json'
@@ -22,7 +24,18 @@ class Helper():
         self.vivado = vivado
 
         self.version = "1.0.0"
-    
+
+    def checkOS(self):
+        platform = sys.platform
+        if platform == "linux" or platform == "linux2":
+            logging.debug("Found Linux")
+        elif platform == "darwin":
+            logging.debug("Found OSX")
+            raise Exception("OSX Not Supported")
+        elif platform == "win32":
+            logging.debug("Found Windows")
+            raise Exception("Windows Not Supported")
+
     def getVersion(self):
         return self.version
 
@@ -33,7 +46,8 @@ class Helper():
         else:
             return {"IP": "192.168.2.99", 
                     "Proj": "P4_Popcount", 
-                    "fpga_design": "bd_fpga"}
+                    "fpga_design": "bd_fpga",
+                    "branch": "master"}
 
     def save_json(self):
         logging.debug("saving JSON to " + self.JF)
@@ -46,7 +60,6 @@ class Helper():
         print ('running: ', command)
         result = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         return result.communicate()
-
 
     def vivado_build_cleanup(self,):
         vsrc_dir = self.MY_DIR + '/verilog/vsrc/'
@@ -63,7 +76,7 @@ class Helper():
                 logging.debug('cleanup: ' + f)
             except FileNotFoundError:
                 logging.debug('skipped: ' + f) 
-        
+
     def build_vivado(self,):
         #sanity check
         if os.path.exists( self.MY_DIR + '/vivado_project/vivado_project.xpr'):
@@ -74,7 +87,6 @@ class Helper():
         self.vivado_build_cleanup()
 
         command = 'vivado -mode batch -source tcl/setup.tcl' 
-        fixup = 'vivado -mode batch -source tcl/fixup.tcl'
 
         if self.vivado != None:
             logging.debug ("vivado specified from command line")
@@ -130,12 +142,14 @@ class Helper():
                     ssh + ' "cd ~/tmp && git init --bare" ',
                     'git remote remove tmp', 
                     'git remote add tmp xilinx@' + self.J['IP'] + ':~/tmp/',
-                    'GIT_SSH_COMMAND=\'ssh -i '+self.priv_key + '\' git push tmp master', 
+                    'GIT_SSH_COMMAND=\'ssh -i '+self.priv_key + '\' git push tmp ' + self.J['branch'], 
                     ssh + ' "git clone tmp ~/jupyter_notebooks/' + proj + ' "',
                     ssh + ' "rm -rf ~/tmp" ',
                     'git remote remove pynq', 
                     'git remote add pynq xilinx@' + self.J['IP'] + ':~/jupyter_notebooks/' + proj,
-                    'GIT_SSH_COMMAND=\'ssh -i '+self.priv_key + '\' git push pynq master', 
+                    'GIT_SSH_COMMAND=\'ssh -i '+self.priv_key + '\' git push pynq ' + self.J['branch'], 
+                    ssh + ' "cd ~/jupyter_notebooks/' + proj + ' && git checkout ' + self.J['branch'] + '"',
+                    ssh + ' "cd ~/jupyter_notebooks/' + proj + ' && git config receive.denyCurrentBranch" '
                    ]   
         for command in commands:                     
             self.run_command(command)
@@ -221,7 +235,7 @@ class Parser():
 
         init_ap.set_defaults(function=self.init)
         args = ap.parse_args()
-       
+
         # load debug mode
         if args.debug: 
             logging.basicConfig(format='%(levelname)s:%(message)s',
@@ -232,11 +246,11 @@ class Parser():
                                 ])
             logging.debug("Enabling Debug")
 
-        if not hasattr(self, args.command):
-            print ('Unrecognized Command')
+        if args.command == None: 
+            print ('No command specified!')
             ap.print_help()
             exit(1)
-        
+       
         #jump to the correct command function
         getattr(self, args.command)(args)
 
